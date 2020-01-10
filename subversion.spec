@@ -17,7 +17,7 @@
 Summary: A Modern Concurrent Version Control System
 Name: subversion
 Version: 1.6.11
-Release: 10%{?dist}
+Release: 12%{?dist}
 License: ASL 1.1
 Group: Development/Tools
 URL: http://subversion.apache.org/
@@ -52,6 +52,8 @@ Patch28: subversion-1.6.11-CVE-2013-1846-1847.patch
 Patch29: subversion-1.6.11-CVE-2013-2112.patch
 Patch30: subversion-1.6.11-CVE-2013-1968.patch
 Patch31: subversion-1.6.11-CVE-2014-0032.patch
+Patch32: subversion-1.6.11-CVE-2014-3528.patch
+Patch33: subversion-1.6.11-CVE-2014-3580.patch
 BuildRequires: autoconf, libtool, python, python-devel, texinfo, which
 BuildRequires: db4-devel >= 4.1.25, swig >= 1.3.24, gettext
 BuildRequires: apr-devel >= 1.3.0, apr-util-devel >= 1.3.0
@@ -197,6 +199,8 @@ cd ../../..
 %patch29 -p1 -b .cve2112
 %patch30 -p1 -b .cve1968
 %patch31 -p1 -b .cve0032
+%patch32 -p1 -b .cve3528
+%patch33 -p1 -b .cve3580
 
 sed -i -e 's|^XSL="$dir/|XSL="%{_datadir}/svn2cl/|' \
         contrib/client-side/svn2cl/svn2cl.sh
@@ -479,6 +483,12 @@ fi
 %{_mandir}/man1/svn2cl.1*
 
 %changelog
+* Wed Feb  4 2015 Joe Orton <jorton@redhat.com> - 1.6.11-12
+- mod_dav_svn fix for CVE-2014-3580 backport
+
+* Mon Jan 12 2015 Joe Orton <jorton@redhat.com> - 1.6.11-11
+- add security fixes for CVE-2014-3528, CVE_2014-3580
+
 * Wed Feb 12 2014 Joe Orton <jorton@redhat.com> - 1.6.11-10
 - add security fixes for CVE-2013-1968, CVE-2013-2112, CVE-2014-0032
 
