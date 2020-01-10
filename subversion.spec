@@ -17,7 +17,7 @@
 Summary: A Modern Concurrent Version Control System
 Name: subversion
 Version: 1.6.11
-Release: 9%{?dist}
+Release: 10%{?dist}
 License: ASL 1.1
 Group: Development/Tools
 URL: http://subversion.apache.org/
@@ -49,6 +49,9 @@ Patch25: subversion-1.6.11-CVE-2011-1921.patch
 Patch26: subversion-1.6.11-CVE-2013-1845.patch
 Patch27: subversion-1.6.11-CVE-2013-1849.patch
 Patch28: subversion-1.6.11-CVE-2013-1846-1847.patch
+Patch29: subversion-1.6.11-CVE-2013-2112.patch
+Patch30: subversion-1.6.11-CVE-2013-1968.patch
+Patch31: subversion-1.6.11-CVE-2014-0032.patch
 BuildRequires: autoconf, libtool, python, python-devel, texinfo, which
 BuildRequires: db4-devel >= 4.1.25, swig >= 1.3.24, gettext
 BuildRequires: apr-devel >= 1.3.0, apr-util-devel >= 1.3.0
@@ -191,6 +194,9 @@ cd ../../..
 %patch26 -p1 -b .cve1845
 %patch27 -p1 -b .cve1849
 %patch28 -p1 -b .cve1846_1847
+%patch29 -p1 -b .cve2112
+%patch30 -p1 -b .cve1968
+%patch31 -p1 -b .cve0032
 
 sed -i -e 's|^XSL="$dir/|XSL="%{_datadir}/svn2cl/|' \
         contrib/client-side/svn2cl/svn2cl.sh
@@ -473,11 +479,14 @@ fi
 %{_mandir}/man1/svn2cl.1*
 
 %changelog
+* Wed Feb 12 2014 Joe Orton <jorton@redhat.com> - 1.6.11-10
+- add security fixes for CVE-2013-1968, CVE-2013-2112, CVE-2014-0032
+
 * Tue Apr 02 2013 Jan Kaluza <jkaluza@redhat.com> - 1.6.11-9
-- add security fixes for CVE-2013-1846, CVE-2013-1847, CVE-2013-1849 (#947372)
+- add security fixes for CVE-2013-1846, CVE-2013-1847, CVE-2013-1849 (#947374)
 
 * Tue Apr 02 2013 Jan Kaluza <jkaluza@redhat.com> - 1.6.11-8
-- add security fix for CVE-2013-1845 (#947372)
+- add security fix for CVE-2013-1845 (#947374)
 
 * Thu Apr 12 2012 Joe Orton <jorton@redhat.com> - 1.6.11-7
 - fix regression in patch for #749494 (upstream r1174076)
