@@ -17,7 +17,7 @@
 Summary: A Modern Concurrent Version Control System
 Name: subversion
 Version: 1.6.11
-Release: 14%{?dist}
+Release: 15%{?dist}
 License: ASL 1.1
 Group: Development/Tools
 URL: http://subversion.apache.org/
@@ -56,6 +56,9 @@ Patch30: subversion-1.6.11-CVE-2013-1968.patch
 Patch31: subversion-1.6.11-CVE-2014-0032.patch
 Patch32: subversion-1.6.11-CVE-2014-3528.patch
 Patch33: subversion-1.6.11-CVE-2014-3580.patch
+Patch34: subversion-1.6.11-CVE-2015-0248.patch
+Patch35: subversion-1.6.11-CVE-2015-0251.patch
+Patch36: subversion-1.6.11-CVE-2015-3187.patch
 BuildRequires: autoconf, libtool, python, python-devel, texinfo, which
 BuildRequires: db4-devel >= 4.1.25, swig >= 1.3.24, gettext
 BuildRequires: apr-devel >= 1.3.0, apr-util-devel >= 1.3.0
@@ -205,6 +208,9 @@ cd ../../..
 %patch31 -p1 -b .cve0032
 %patch32 -p1 -b .cve3528
 %patch33 -p1 -b .cve3580
+%patch34 -p1 -b .cve0248
+%patch35 -p1 -b .cve0251
+%patch36 -p1 -b .cve3187
 
 sed -i -e 's|^XSL="$dir/|XSL="%{_datadir}/svn2cl/|' \
         contrib/client-side/svn2cl/svn2cl.sh
@@ -487,6 +493,9 @@ fi
 %{_mandir}/man1/svn2cl.1*
 
 %changelog
+* Tue Aug  4 2015 Joe Orton <jorton@redhat.com> - 1.6.11-15
+- add security fixes for CVE-2015-0248, CVE-2015-0251, CVE-2015-3187
+
 * Wed Mar  4 2015 Joe Orton <jorton@redhat.com> - 1.6.11-14
 - fix excessive socket use for fsfs memcache caching (#1039085)
 
