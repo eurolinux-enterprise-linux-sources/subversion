@@ -1,0 +1,203 @@
+
+https://bugzilla.redhat.com/show_bug.cgi?id=922718
+
+http://svn.apache.org/viewvc?view=revision&revision=956051
+
+--- subversion-1.6.11/subversion/libsvn_client/merge.c.r956051
++++ subversion-1.6.11/subversion/libsvn_client/merge.c
+@@ -1452,7 +1452,7 @@ merge_file_added(svn_wc_adm_access_t *ad
+   apr_pool_t *subpool = svn_pool_create(merge_b->pool);
+   svn_node_kind_t kind;
+   int i;
+-  apr_hash_t *new_props;
++  apr_hash_t *file_props;
+ 
+   /* In most cases, we just leave prop_state as unknown, and let the
+      content_state what happened, so we set prop_state here to avoid that
+@@ -1464,7 +1464,7 @@ merge_file_added(svn_wc_adm_access_t *ad
+     *tree_conflicted = FALSE;
+ 
+   /* Apply the prop changes to a new hash table. */
+-  new_props = apr_hash_copy(subpool, original_props);
++  file_props = apr_hash_copy(subpool, original_props);
+   for (i = 0; i < prop_changes->nelts; ++i)
+     {
+       const svn_prop_t *prop = &APR_ARRAY_IDX(prop_changes, i, svn_prop_t);
+@@ -1488,7 +1488,7 @@ merge_file_added(svn_wc_adm_access_t *ad
+           && strcmp(prop->name, SVN_PROP_MERGEINFO) == 0)
+         continue;
+ 
+-      apr_hash_set(new_props, prop->name, APR_HASH_KEY_STRING, prop->value);
++      apr_hash_set(file_props, prop->name, APR_HASH_KEY_STRING, prop->value);
+     }
+ 
+   /* Easy out:  if we have no adm_access for the parent directory,
+@@ -1502,7 +1502,7 @@ merge_file_added(svn_wc_adm_access_t *ad
+         {
+           if (content_state)
+             *content_state = svn_wc_notify_state_changed;
+-          if (prop_state && apr_hash_count(new_props))
++          if (prop_state && apr_hash_count(file_props))
+             *prop_state = svn_wc_notify_state_changed;
+         }
+       else
+@@ -1536,14 +1536,15 @@ merge_file_added(svn_wc_adm_access_t *ad
+       {
+         if (! merge_b->dry_run)
+           {
+-            const char *copyfrom_url = NULL;
+-            svn_revnum_t copyfrom_rev = SVN_INVALID_REVNUM;
+-            svn_stream_t *new_base_contents;
++            const char *copyfrom_url;
++            svn_revnum_t copyfrom_rev;
++            svn_stream_t *new_contents, *new_base_contents;
++            apr_hash_t *new_base_props, *new_props;
+             svn_wc_conflict_description_t *existing_conflict;
+ 
+-            /* If this is a merge from the same repository as our working copy,
+-               we handle adds as add-with-history.  Otherwise, we'll use a pure
+-               add. */
++            /* If this is a merge from the same repository as our
++               working copy, we handle adds as add-with-history.
++               Otherwise, we'll use a pure add. */
+             if (merge_b->same_repos)
+               {
+                 const char *child = svn_path_is_child(merge_b->target,
+@@ -1556,10 +1557,22 @@ merge_file_added(svn_wc_adm_access_t *ad
+                   copyfrom_url = merge_b->merge_source.url2;
+                 copyfrom_rev = rev2;
+                 SVN_ERR(check_scheme_match(adm_access, copyfrom_url));
++                new_base_props = file_props;
++                new_props = NULL; /* inherit from new_base_props */
++                SVN_ERR(svn_stream_open_readonly(&new_base_contents, yours,
++                                                 subpool, subpool));
++                new_contents = NULL; /* inherit from new_base_contents */
++              }
++            else
++              {
++                copyfrom_url = NULL;
++                copyfrom_rev = SVN_INVALID_REVNUM;
++                new_base_props = apr_hash_make(subpool);
++                new_props = file_props;
++                new_base_contents = svn_stream_empty(subpool);
++                SVN_ERR(svn_stream_open_readonly(&new_contents, yours,
++                                                 subpool, subpool));
+               }
+-
+-            SVN_ERR(svn_stream_open_readonly(&new_base_contents, yours,
+-                                             subpool, subpool));
+ 
+             SVN_ERR(svn_wc__get_tree_conflict(&existing_conflict,
+                                               mine, adm_access,
+@@ -1588,7 +1601,8 @@ merge_file_added(svn_wc_adm_access_t *ad
+                 /* ### would be nice to have cancel/notify funcs to pass */
+                 SVN_ERR(svn_wc_add_repos_file3(
+                             mine, adm_access,
+-                            new_base_contents, NULL, new_props, NULL,
++                            new_base_contents, new_contents,
++                            new_base_props, new_props,
+                             copyfrom_url, copyfrom_rev,
+                             NULL, NULL, NULL, NULL, subpool));
+ 
+@@ -1597,7 +1611,7 @@ merge_file_added(svn_wc_adm_access_t *ad
+           }
+         if (content_state)
+           *content_state = svn_wc_notify_state_changed;
+-        if (prop_state && apr_hash_count(new_props))
++        if (prop_state && apr_hash_count(file_props))
+           *prop_state = svn_wc_notify_state_changed;
+       }
+       break;
+--- subversion-1.6.11/subversion/tests/cmdline/merge_tests.py.r956051
++++ subversion-1.6.11/subversion/tests/cmdline/merge_tests.py
+@@ -10807,6 +10807,7 @@ def foreign_repos(sbox):
+ 
+   # Convenience variables for working copy paths.
+   Z_path = os.path.join(wc_dir, 'A', 'D', 'G', 'Z')
++  B_path = os.path.join(wc_dir, 'A', 'B')
+   Q_path = os.path.join(wc_dir, 'Q')
+   H_path = os.path.join(wc_dir, 'A', 'D', 'H')
+   iota_path = os.path.join(wc_dir, 'iota')
+@@ -10815,21 +10816,24 @@ def foreign_repos(sbox):
+   zeta_path = os.path.join(wc_dir, 'A', 'D', 'G', 'Z', 'zeta')
+   fred_path = os.path.join(wc_dir, 'A', 'C', 'fred')
+ 
+-  # Add new directories
++  # Add new directories, with properties
+   svntest.main.run_svn(None, 'mkdir', Q_path, Z_path)
++  svntest.main.run_svn(None, 'pset', 'foo', 'bar', Q_path, Z_path)
+ 
+-  # Add new files
++  # Add new files, with contents and properties.
+   zeta_contents = "This is the file 'zeta'.\n"
+   fred_contents = "This is the file 'fred'.\n"
+   svntest.main.file_append(zeta_path, zeta_contents)
+   svntest.main.file_append(fred_path, fred_contents)
+   svntest.main.run_svn(None, 'add', zeta_path, fred_path)
+-
+-  # Modify existing files
++  svntest.main.run_svn(None, 'pset', 'foo', 'bar', zeta_path, fred_path)
++  
++  # Modify existing files and directories.
+   added_contents = "This is another line of text.\n"
+   svntest.main.file_append(iota_path, added_contents)
+   svntest.main.file_append(beta_path, added_contents)
+-
++  svntest.main.run_svn(None, 'pset', 'foo', 'bar', iota_path, B_path)
++  
+   # Delete some stuff
+   svntest.main.run_svn(None, 'delete', alpha_path, H_path)
+ 
+@@ -10840,6 +10844,7 @@ def foreign_repos(sbox):
+     'A/D/G/Z/zeta' : Item(verb='Adding'),
+     'A/C/fred'     : Item(verb='Adding'),
+     'iota'         : Item(verb='Sending'),
++    'A/B'          : Item(verb='Sending'),
+     'A/B/E/beta'   : Item(verb='Sending'),
+     'A/B/E/alpha'  : Item(verb='Deleting'),
+     'A/D/H'        : Item(verb='Deleting'),
+@@ -10851,21 +10856,23 @@ def foreign_repos(sbox):
+     'A/D/G/Z/zeta' : Item(status='  ', wc_rev=2),
+     'A/C/fred'     : Item(status='  ', wc_rev=2),
+     })
+-  expected_status.tweak('iota', 'A/B/E/beta', wc_rev=2)
++  expected_status.tweak('iota', 'A/B/E/beta', 'A/B', wc_rev=2)
+   expected_status.remove('A/B/E/alpha', 'A/D/H', 'A/D/H/chi',
+                          'A/D/H/psi', 'A/D/H/omega')
+   expected_disk = svntest.main.greek_state.copy()
+   expected_disk.add({
+-    'Q'            : Item(),
+-    'A/D/G/Z'      : Item(),
+-    'A/D/G/Z/zeta' : Item(contents=zeta_contents),
+-    'A/C/fred'     : Item(contents=fred_contents),
++    'Q'            : Item(props={'foo':'bar'}),
++    'A/D/G/Z'      : Item(props={'foo':'bar'}),
++    'A/D/G/Z/zeta' : Item(contents=zeta_contents,props={'foo':'bar'}),
++    'A/C/fred'     : Item(contents=fred_contents,props={'foo':'bar'}),
+     })
+   expected_disk.remove('A/B/E/alpha', 'A/D/H', 'A/D/H/chi',
+                        'A/D/H/psi', 'A/D/H/omega')
+   expected_disk.tweak('iota',
+                       contents=expected_disk.desc['iota'].contents
+-                      + added_contents)
++                      + added_contents,
++                      props={'foo':'bar'})
++  expected_disk.tweak('A/B', props={'foo':'bar'})
+   expected_disk.tweak('A/B/E/beta',
+                       contents=expected_disk.desc['A/B/E/beta'].contents
+                       + added_contents)
+@@ -10887,6 +10894,14 @@ def foreign_repos(sbox):
+   svntest.actions.verify_disk(wc_dir2, expected_disk,
+                               None, None, None, None, 1)
+ 
++  # Now, let's make a third checkout -- our second from the original
++  # repository -- and make sure that all the data there is correct.
++  # It should look just like the original EXPECTED_DISK.
++  wc_dir3 = sbox.add_wc_path('wc3')
++  svntest.actions.run_and_verify_svn(None, None, [], 'checkout',
++                                     sbox2.repo_url, wc_dir3)
++  svntest.actions.verify_disk(wc_dir3, expected_disk,
++                              None, None, None, None, 1)
+ 
+ def foreign_repos_uuid(sbox):
+   "verify uuid of items added via foreign repo merge"

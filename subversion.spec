@@ -17,7 +17,7 @@
 Summary: A Modern Concurrent Version Control System
 Name: subversion
 Version: 1.6.11
-Release: 12%{?dist}
+Release: 14%{?dist}
 License: ASL 1.1
 Group: Development/Tools
 URL: http://subversion.apache.org/
@@ -39,6 +39,8 @@ Patch10: subversion-1.6.11-r934494.patch
 Patch11: subversion-1.6.11-r955335.patch
 Patch12: subversion-1.6.11-r1001802.patch
 Patch13: subversion-1.6.11-r1174076.patch
+Patch14: subversion-1.6.11-r956051.patch
+Patch15: subversion-1.6.11-r1391641.patch
 # Security fixes
 Patch20: subversion-1.6.11-CVE-2010-3315.patch
 Patch21: subversion-1.6.11-CVE-2010-4539.patch
@@ -186,6 +188,8 @@ cd ../../..
 %patch11 -p1 -b .r955335
 %patch12 -p1 -b .r1001802
 %patch13 -p1 -b .r1174076
+%patch14 -p1 -b .r956051
+%patch15 -p1 -b .r1391641
 
 %patch20 -p1 -b .cve3315
 %patch21 -p1 -b .cve4539
@@ -483,6 +487,12 @@ fi
 %{_mandir}/man1/svn2cl.1*
 
 %changelog
+* Wed Mar  4 2015 Joe Orton <jorton@redhat.com> - 1.6.11-14
+- fix excessive socket use for fsfs memcache caching (#1039085)
+
+* Mon Mar  2 2015 Joe Orton <jorton@redhat.com> - 1.6.11-13
+- retain file properties on foreign repo merge (#922718)
+
 * Wed Feb  4 2015 Joe Orton <jorton@redhat.com> - 1.6.11-12
 - mod_dav_svn fix for CVE-2014-3580 backport
 
