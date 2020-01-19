@@ -20,7 +20,7 @@
 Summary: A Modern Concurrent Version Control System
 Name: subversion
 Version: 1.7.14
-Release: 7%{?dist}
+Release: 7%{?dist}.1
 License: ASL 2.0
 Group: Development/Tools
 URL: http://subversion.apache.org/
@@ -45,6 +45,10 @@ Patch12: subversion-1.7.14-CVE-2014-0032.patch
 Patch13: subversion-1.7.14-CVE-2014-3528.patch
 Patch14: subversion-1.7.14-CVE-2014-3580.patch
 Patch15: subversion-1.7.14-CVE-2014-8108.patch
+Patch16: subversion-1.7.14-CVE-2015-0248.patch
+Patch17: subversion-1.7.14-CVE-2015-0251.patch
+Patch18: subversion-1.7.14-CVE-2015-3184.patch
+Patch19: subversion-1.7.14-CVE-2015-3187.patch
 BuildRequires: autoconf, libtool, python, python-devel, texinfo, which
 BuildRequires: libdb-devel, swig >= 1.3.24, gettext
 BuildRequires: apr-devel >= 1.3.0, apr-util-devel >= 1.3.0
@@ -118,12 +122,13 @@ The subversion-kde package adds support for storing Subversion
 passwords in the KDE Wallet.
 %endif
 
+# Require httpd, httpd-devel with API fixing CVE-2015-3185
 %package -n mod_dav_svn
 Group: System Environment/Daemons
 Summary: Apache httpd module for Subversion server
-Requires: httpd-mmn = %{_httpd_mmn}
+Requires: httpd-mmn = %{_httpd_mmn}, httpd >= 2.4.6-31%{?dist}.1
 Requires: subversion-libs%{?_isa} = %{version}-%{release}
-BuildRequires: httpd-devel >= 2.0.45
+BuildRequires: httpd-devel >= 2.4.6-31%{?dist}.1
 
 %description -n mod_dav_svn
 The mod_dav_svn package allows access to a Subversion repository
@@ -189,6 +194,10 @@ This package includes supplementary tools for use with Subversion.
 %patch13 -p1 -b .cve3528
 %patch14 -p1 -b .cve3580
 %patch15 -p1 -b .cve8108
+%patch16 -p1 -b .cve0248
+%patch17 -p1 -b .cve0251
+%patch18 -p1 -b .cve3184
+%patch19 -p1 -b .cve3187
 
 %build
 # Regenerate the buildsystem, so that:
@@ -218,6 +227,7 @@ export CC=gcc CXX=g++ JAVA_HOME=%{jdk_path} CFLAGS="$RPM_OPT_FLAGS"
         --with-ruby-sitedir=%{ruby_vendorarchdir} \
         --with-ruby-test-verbose=verbose \
         --with-apxs=%{_httpd_apxs} --disable-mod-activation \
+        --enable-broken-httpd-auth=backport \
         --disable-static --with-sasl=%{_prefix} \
         --disable-neon-version-check \
         --with-libmagic=%{_prefix} \
@@ -480,6 +490,14 @@ rm -rf ${RPM_BUILD_ROOT}
 %endif
 
 %changelog
+* Tue Sep 08 2015 Scientific Linux Auto Patch Process <SCIENTIFIC-LINUX-DEVEL@LISTSERV.FNAL.GOV>
+- Eliminated rpmbuild "bogus date" error due to inconsistent weekday,
+  by assuming the date is correct and changing the weekday.
+
+* Wed Aug 12 2015 Joe Orton <jorton@redhat.com> - 1.7.14-7.1
+- add security fixes for CVE-2015-0248, CVE-2015-0251, CVE-2015-3184,
+  CVE-2015-3187
+
 * Fri Jan  9 2015 Joe Orton <jorton@redhat.com> - 1.7.14-7
 - add security fixes for CVE-2014-3528, CVE-2014-3580, CVE-2014-8108
 
