@@ -22,7 +22,7 @@
 Summary: A Modern Concurrent Version Control System
 Name: subversion
 Version: 1.7.14
-Release: 10%{?dist}
+Release: 11%{?dist}
 License: ASL 2.0
 Group: Development/Tools
 URL: http://subversion.apache.org/
@@ -51,6 +51,7 @@ Patch16: subversion-1.7.14-CVE-2015-0248.patch
 Patch17: subversion-1.7.14-CVE-2015-0251.patch
 Patch18: subversion-1.7.14-CVE-2015-3184.patch
 Patch19: subversion-1.7.14-CVE-2015-3187.patch
+Patch20: subversion-1.7.14-CVE-2017-9800.patch
 BuildRequires: autoconf, libtool, python, python-devel, texinfo, which
 BuildRequires: libdb-devel, swig >= 1.3.24, gettext
 BuildRequires: apr-devel >= 1.3.0, apr-util-devel >= 1.3.0
@@ -200,6 +201,7 @@ This package includes supplementary tools for use with Subversion.
 %patch17 -p1 -b .cve0251
 %patch18 -p1 -b .cve3184
 %patch19 -p1 -b .cve3187
+%patch20 -p0 -b .cve9800
 
 %build
 # Regenerate the buildsystem, so that:
@@ -497,6 +499,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %endif
 
 %changelog
+* Wed Aug  9 2017 Joe Orton <jorton@redhat.com> - 1.7.14-11
+- add security fix for CVE-2017-9800
+
 * Wed Aug 12 2015 Joe Orton <jorton@redhat.com> - 1.7.14-10
 - add security fixes for CVE-2015-0248, CVE-2015-0251, CVE-2015-3184,
   CVE-2015-3187
