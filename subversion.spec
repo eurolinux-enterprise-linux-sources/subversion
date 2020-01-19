@@ -1,8 +1,6 @@
 # set to zero to avoid running test suite
 %define make_check 1
 
-%global _hardened_build 1
-
 %define with_java 1
 %define with_kwallet 1
 
@@ -22,7 +20,7 @@
 Summary: A Modern Concurrent Version Control System
 Name: subversion
 Version: 1.7.14
-Release: 14%{?dist}
+Release: 7%{?dist}
 License: ASL 2.0
 Group: Development/Tools
 URL: http://subversion.apache.org/
@@ -47,14 +45,6 @@ Patch12: subversion-1.7.14-CVE-2014-0032.patch
 Patch13: subversion-1.7.14-CVE-2014-3528.patch
 Patch14: subversion-1.7.14-CVE-2014-3580.patch
 Patch15: subversion-1.7.14-CVE-2014-8108.patch
-Patch16: subversion-1.7.14-CVE-2015-0248.patch
-Patch17: subversion-1.7.14-CVE-2015-0251.patch
-Patch18: subversion-1.7.14-CVE-2015-3184.patch
-Patch19: subversion-1.7.14-CVE-2015-3187.patch
-Patch20: subversion-1.7.14-CVE-2017-9800.patch
-Patch21: subversion-1.7.14-r1439592+.patch
-Patch22: subversion-1.7.14-r1708699.patch
-Patch23: subversion-1.7.14-r1564900.patch
 BuildRequires: autoconf, libtool, python, python-devel, texinfo, which
 BuildRequires: libdb-devel, swig >= 1.3.24, gettext
 BuildRequires: apr-devel >= 1.3.0, apr-util-devel >= 1.3.0
@@ -128,13 +118,12 @@ The subversion-kde package adds support for storing Subversion
 passwords in the KDE Wallet.
 %endif
 
-# Require httpd, httpd-devel with API fixing CVE-2015-3185
 %package -n mod_dav_svn
 Group: System Environment/Daemons
 Summary: Apache httpd module for Subversion server
-Requires: httpd-mmn = %{_httpd_mmn}, httpd >= 2.4.6-37
+Requires: httpd-mmn = %{_httpd_mmn}
 Requires: subversion-libs%{?_isa} = %{version}-%{release}
-BuildRequires: httpd-devel >= 2.4.6-37
+BuildRequires: httpd-devel >= 2.0.45
 
 %description -n mod_dav_svn
 The mod_dav_svn package allows access to a Subversion repository
@@ -200,14 +189,6 @@ This package includes supplementary tools for use with Subversion.
 %patch13 -p1 -b .cve3528
 %patch14 -p1 -b .cve3580
 %patch15 -p1 -b .cve8108
-%patch16 -p1 -b .cve0248
-%patch17 -p1 -b .cve0251
-%patch18 -p1 -b .cve3184
-%patch19 -p1 -b .cve3187
-%patch20 -p0 -b .cve9800
-%patch21 -p1 -b .r1439592+
-%patch22 -p1 -b .r1708699
-%patch23 -p1 -b .r1564900
 
 %build
 # Regenerate the buildsystem, so that:
@@ -231,14 +212,12 @@ sed -i 's/-fpie/-fPIE/' Makefile.in
 %endif
 
 export APACHE_LDFLAGS="-Wl,-z,relro,-z,now"
-export LDFLAGS="-Wl,-z,relro,-z,now"
 export CC=gcc CXX=g++ JAVA_HOME=%{jdk_path} CFLAGS="$RPM_OPT_FLAGS"
 %configure --with-apr=%{_prefix} --with-apr-util=%{_prefix} \
         --with-swig --with-neon=%{_prefix} \
         --with-ruby-sitedir=%{ruby_vendorarchdir} \
         --with-ruby-test-verbose=verbose \
         --with-apxs=%{_httpd_apxs} --disable-mod-activation \
-        --enable-broken-httpd-auth=backport \
         --disable-static --with-sasl=%{_prefix} \
         --disable-neon-version-check \
         --with-libmagic=%{_prefix} \
@@ -311,9 +290,7 @@ rm -f ${RPM_BUILD_ROOT}%{_libdir}/libsvn_swig_*.{so,la,a}
 rm -f ${RPM_BUILD_ROOT}%{ruby_vendorarchdir}/svn/ext/*.*a
 
 # Trim what goes in docdir
-rm -v tools/*/*.in \
-    tools/hook-scripts/mailer/mailer.conf.example.* \
-    tools/hook-scripts/mailer/mailer.py.*
+rm -rf tools/*/*.in
 
 # Install psvn for emacs and xemacs
 for f in emacs/site-lisp xemacs/site-packages/lisp; do
@@ -380,11 +357,7 @@ if ! make check check-swig-pl check-swig-py check-swig-rb CLEANUP=yes; then
 fi
 # check-swig-rb omitted: it runs svnserve
 %if %{with_java}
-if test `id -u` -eq 0; then
-  : Omitting javahl tests as root
-else
-  make check-javahl
-fi
+make check-javahl
 %endif
 %endif
 
@@ -437,7 +410,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %dir %{_sysconfdir}/subversion
 %exclude %{_mandir}/man*/*::*
 %{_unitdir}/*.service
-%attr(0700,root,root) %dir /run/svnserve
+%dir /run/svnserve
 %{_prefix}/lib/tmpfiles.d/svnserve.conf
 
 %files tools -f tools.files
@@ -507,28 +480,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %endif
 
 %changelog
-* Wed Oct 25 2017 Joe Orton <jorton@redhat.com> - 1.7.14-14
-- remove installed backup files (#1379593)
-
-* Fri Oct 20 2017 Joe Orton <jorton@redhat.com> - 1.7.14-13
-- fix mod_authz_svn regression with mod_auth_kerb (#1306431)
-- fix "svn diff" property handling (#1378178)
-- fix permissions of /run/svnserve to match tmpfiles (#1496243)
-
-* Fri Oct 20 2017 Joe Orton <jorton@redhat.com> - 1.7.14-12
-- add repos_basename substitution variable in mailer.py (#1379593)
-
-* Wed Aug  9 2017 Joe Orton <jorton@redhat.com> - 1.7.14-11
-- add security fix for CVE-2017-9800
-
-* Wed Aug 12 2015 Joe Orton <jorton@redhat.com> - 1.7.14-10
-- add security fixes for CVE-2015-0248, CVE-2015-0251, CVE-2015-3184,
-  CVE-2015-3187
-
-* Tue Jul  7 2015 Joe Orton <jorton@redhat.com> - 1.7.14-8
-- build with full RELRO (#1092533)
-- fix rebuild under root user (#1035340)
-
 * Fri Jan  9 2015 Joe Orton <jorton@redhat.com> - 1.7.14-7
 - add security fixes for CVE-2014-3528, CVE-2014-3580, CVE-2014-8108
 
