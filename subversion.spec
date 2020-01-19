@@ -22,7 +22,7 @@
 Summary: A Modern Concurrent Version Control System
 Name: subversion
 Version: 1.7.14
-Release: 11%{?dist}
+Release: 14%{?dist}
 License: ASL 2.0
 Group: Development/Tools
 URL: http://subversion.apache.org/
@@ -52,6 +52,9 @@ Patch17: subversion-1.7.14-CVE-2015-0251.patch
 Patch18: subversion-1.7.14-CVE-2015-3184.patch
 Patch19: subversion-1.7.14-CVE-2015-3187.patch
 Patch20: subversion-1.7.14-CVE-2017-9800.patch
+Patch21: subversion-1.7.14-r1439592+.patch
+Patch22: subversion-1.7.14-r1708699.patch
+Patch23: subversion-1.7.14-r1564900.patch
 BuildRequires: autoconf, libtool, python, python-devel, texinfo, which
 BuildRequires: libdb-devel, swig >= 1.3.24, gettext
 BuildRequires: apr-devel >= 1.3.0, apr-util-devel >= 1.3.0
@@ -202,6 +205,9 @@ This package includes supplementary tools for use with Subversion.
 %patch18 -p1 -b .cve3184
 %patch19 -p1 -b .cve3187
 %patch20 -p0 -b .cve9800
+%patch21 -p1 -b .r1439592+
+%patch22 -p1 -b .r1708699
+%patch23 -p1 -b .r1564900
 
 %build
 # Regenerate the buildsystem, so that:
@@ -305,7 +311,9 @@ rm -f ${RPM_BUILD_ROOT}%{_libdir}/libsvn_swig_*.{so,la,a}
 rm -f ${RPM_BUILD_ROOT}%{ruby_vendorarchdir}/svn/ext/*.*a
 
 # Trim what goes in docdir
-rm -rf tools/*/*.in
+rm -v tools/*/*.in \
+    tools/hook-scripts/mailer/mailer.conf.example.* \
+    tools/hook-scripts/mailer/mailer.py.*
 
 # Install psvn for emacs and xemacs
 for f in emacs/site-lisp xemacs/site-packages/lisp; do
@@ -429,7 +437,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %dir %{_sysconfdir}/subversion
 %exclude %{_mandir}/man*/*::*
 %{_unitdir}/*.service
-%dir /run/svnserve
+%attr(0700,root,root) %dir /run/svnserve
 %{_prefix}/lib/tmpfiles.d/svnserve.conf
 
 %files tools -f tools.files
@@ -499,6 +507,17 @@ rm -rf ${RPM_BUILD_ROOT}
 %endif
 
 %changelog
+* Wed Oct 25 2017 Joe Orton <jorton@redhat.com> - 1.7.14-14
+- remove installed backup files (#1379593)
+
+* Fri Oct 20 2017 Joe Orton <jorton@redhat.com> - 1.7.14-13
+- fix mod_authz_svn regression with mod_auth_kerb (#1306431)
+- fix "svn diff" property handling (#1378178)
+- fix permissions of /run/svnserve to match tmpfiles (#1496243)
+
+* Fri Oct 20 2017 Joe Orton <jorton@redhat.com> - 1.7.14-12
+- add repos_basename substitution variable in mailer.py (#1379593)
+
 * Wed Aug  9 2017 Joe Orton <jorton@redhat.com> - 1.7.14-11
 - add security fix for CVE-2017-9800
 
